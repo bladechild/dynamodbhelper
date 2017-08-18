@@ -1,0 +1,14 @@
+{
+  "name": "dynamodbhelper",
+  "version": "1.1.0",
+  "description": "CRUD for DynamoDB",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Miao Huang",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.100.0"
+  }
+}
