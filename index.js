@@ -27,7 +27,7 @@ function RecursiveGet(tableName,items,start,condition,callback,region = "us-east
         docClient.scan(paras, function (err, data) {
             count-=1;
             if (err) {
-                //console.log(`Fail fetching data from ${tableName}`, err);
+                console.log(`Fail fetching data from ${tableName}`, err);
                 callback("Error");
             } else {
                 //console.log(data);
@@ -171,7 +171,7 @@ function GetAllItems(tableName,condition=null,region = "us-east-1")
     return new Promise((resolve,reject)=>{
         RecursiveGet(tableName,items,null,condition,(msg)=>{
             if(msg=="Error")
-                reject(`Fail fetching data from ${tableName}`);
+                reject(`Fail fetching data from ${tableName}.`);
             else
                 resolve(items);
         },region);
