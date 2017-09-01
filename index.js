@@ -78,7 +78,7 @@ function write(items,tableName,requestType,region = "us-east-1")
 
 }
 
-function recursiveWrite(items,tableName,requestType,callback)
+function recursiveWrite(items,tableName,requestType,callback,region = "us-east-1")
 {
     if(items.length<=0)
         callback("Done");
@@ -86,7 +86,7 @@ function recursiveWrite(items,tableName,requestType,callback)
     {
         if(items.length<=25)
         {
-            write(items,tableName,requestType)
+            write(items,tableName,requestType,region)
                 .then(success=>{
                     //console.log(success);
                     callback("Done");
@@ -100,7 +100,7 @@ function recursiveWrite(items,tableName,requestType,callback)
         else
         {
             let subItems = items.slice(0,25);            
-            write(subItems,tableName,requestType)
+            write(subItems,tableName,requestType,region)
                 .then(success=>{
                     //console.log(success);
                     recursiveWrite(items.slice(25),tableName,requestType,callback);
@@ -133,15 +133,15 @@ function InsertItem(item, tableName, callback,region = "us-east-1")
 }
 
 //create/update multiple items
-function InsertItems(items, tableName,callback)
+function InsertItems(items, tableName,callback,region = "us-east-1")
 {
-    recursiveWrite(items,tableName,"PutRequest",(msg)=> callback(msg));
+    recursiveWrite(items,tableName,"PutRequest",(msg)=> callback(msg),region);
 }
 
 //delete items
-function DeleteItems(items, tableName,callback)
+function DeleteItems(items, tableName,callback,region = "us-east-1")
 {
-    recursiveWrite(items,tableName,"DeleteRequest",(msg)=> callback(msg));
+    recursiveWrite(items,tableName,"DeleteRequest",(msg)=> callback(msg), region);
 }
 
 //read item by key
@@ -165,7 +165,7 @@ function GetItemById(item, tableName,region = "us-east-1")
 }
 
 //read all items, conditions is optional and must be well formated
-function GetAllItems(tableName,condition=null)
+function GetAllItems(tableName,condition=null,region = "us-east-1")
 {
     let items = [];
     return new Promise((resolve,reject)=>{
@@ -174,7 +174,7 @@ function GetAllItems(tableName,condition=null)
                 reject(`Fail fetching data from ${tableName}`);
             else
                 resolve(items);
-        });
+        },region);
     });
 
 }
