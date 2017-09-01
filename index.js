@@ -1,8 +1,8 @@
 'use strict';
 var AWS = require('aws-sdk');
-const docClient = new AWS.DynamoDB.DocumentClient({ region: 'us-east-1' });
+
 let count = 0;
-function RecursiveGet(tableName,items,start,condition,callback)
+function RecursiveGet(tableName,items,start,condition,callback,region = "us-east-1")
 {
     //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
     let paras = {
@@ -11,10 +11,11 @@ function RecursiveGet(tableName,items,start,condition,callback)
     };
     if(condition)
     {
-        let {conditions,operator,parameters} = condition;
+        let {conditions,operator,parameters, parameterNames} = condition;
         let filter = conditions.join(` ${operator} `);
         paras.FilterExpression = filter;
         paras.ExpressionAttributeValues = parameters;
+        paras.ExpressionAttributeNames = parameterNames;
     }
     if(start)
         paras.ExclusiveStartKey = start;
@@ -22,6 +23,7 @@ function RecursiveGet(tableName,items,start,condition,callback)
     //console.log(paras);
     count+=1;
     setTimeout(function() {
+        const docClient = new AWS.DynamoDB.DocumentClient({ region });
         docClient.scan(paras, function (err, data) {
             count-=1;
             if (err) {
@@ -41,7 +43,7 @@ function RecursiveGet(tableName,items,start,condition,callback)
 
 }
 
-function write(items,tableName,requestType)
+function write(items,tableName,requestType,region = "us-east-1")
 {
     let paras = {};
     let tableparas = {};
@@ -60,6 +62,7 @@ function write(items,tableName,requestType)
     count+=1;
     return new Promise((resolve,reject)=>{
         setTimeout(function() {
+            const docClient = new AWS.DynamoDB.DocumentClient({ region });
             docClient.batchWrite(paras, function (err) {
                 count-=1;
                 let writeType = requestType=="PutRequest"?"Insert":"Delete";
@@ -111,12 +114,13 @@ function recursiveWrite(items,tableName,requestType,callback)
 }
 
 //create/update only one item
-function InsertItem(item, tableName, callback)
+function InsertItem(item, tableName, callback,region = "us-east-1")
 {
     const params = {
         Item: item,
         TableName: tableName,
     };
+    const docClient = new AWS.DynamoDB.DocumentClient({ region });
     docClient.put(params, function (err) {
         if (err) {
             ////console.log(`Fail inserting record to table ${tableName}: `, err);
@@ -141,13 +145,14 @@ function DeleteItems(items, tableName,callback)
 }
 
 //read item by key
-function GetItemById(item, tableName) 
+function GetItemById(item, tableName,region = "us-east-1") 
 {
     var params = {
         Key: item,
         TableName: tableName,
     };
     return new Promise((resolve,reject)=>{
+        const docClient = new AWS.DynamoDB.DocumentClient({ region });
         docClient.get(params, function (err, data) {
             if (err) {
                 reject(`Fail fetching data from ${tableName},Error: ${err}`);
@@ -175,7 +180,7 @@ function GetAllItems(tableName,condition=null)
 }
 
 //update one item
-function UpdateItem(key,attr,tableName)
+function UpdateItem(key,attr,tableName,region = "us-east-1")
 {
     let expression = [];
     let expressionNames = {};
@@ -193,6 +198,7 @@ function UpdateItem(key,attr,tableName)
         UpdateExpression:`SET ${expression}`
     };
     return new Promise((resolve,reject)=>{
+        const docClient = new AWS.DynamoDB.DocumentClient({ region });
         docClient.update(params, function (err, data) {
             if (err) {
                 reject(`Fail updating data from ${tableName},Error: ${err}`);

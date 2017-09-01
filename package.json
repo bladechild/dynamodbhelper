@@ -1,6 +1,6 @@
 {
   "name": "dynamodbhelper",
-  "version": "1.4.0",
+  "version": "1.4.2",
   "description": "CRUD for DynamoDB",
   "main": "index.js",
   "scripts": {
