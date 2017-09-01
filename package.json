@@ -1,6 +1,6 @@
 {
   "name": "dynamodbhelper",
-  "version": "1.4.2",
+  "version": "1.5.1",
   "description": "CRUD for DynamoDB",
   "main": "index.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "type": "git",
     "url": "https://github.com/bladechild/dynamodbhelper"
   },
-  "bugs":{
+  "bugs": {
     "url": "https://github.com/bladechild/dynamodbhelper/issues",
     "email": "miaohuang910917@gmail.com"
   }
