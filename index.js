@@ -33,7 +33,7 @@ function RecursiveGet(tableName,items,start,condition,callback,region = "us-east
                 //console.log(data);
                 items.push(...data.Items);
                 if(data.LastEvaluatedKey)
-                    RecursiveGet(tableName,items,data.LastEvaluatedKey,condition,callback);
+                    RecursiveGet(tableName,items,data.LastEvaluatedKey,condition,callback,region);
                 else
                     callback("Done");
             }
