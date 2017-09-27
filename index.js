@@ -61,21 +61,37 @@ function write(items,tableName,requestType,region = "us-east-1")
     //console.log(items);
     count+=1;
     return new Promise((resolve,reject)=>{
-        setTimeout(function() {
-            const docClient = new AWS.DynamoDB.DocumentClient({ region });
-            docClient.batchWrite(paras, function (err) {
-                count-=1;
-                let writeType = requestType=="PutRequest"?"Insert":"Delete";
-                if (err) {
-                    reject(`Fail to ${writeType} records to table ${tableName}: Error: ${err}`);
-                } else {
-                    resolve(`${writeType} Records successfully in table ${tableName}`);
-                }
-            });
-        }, 250*count);
-        
+        const docClient = new AWS.DynamoDB.DocumentClient({ region });
+        recursiveBatchWrite(docClient,paras,tableName,requestType,(error,msg)=>{
+            if(error)
+                reject(error);
+            else
+                resolve(msg);
+        });
+            
     });
 
+}
+function recursiveBatchWrite(docClient,paras,tableName,requestType,callback)
+{
+    count+=1;
+    setTimeout(function() {
+        docClient.batchWrite(paras, function (err,data) {
+            count-=1;
+            let writeType = requestType=="PutRequest"?"Insert":"Delete";
+            if (err) {
+                callback(new Error(`Fail to ${writeType} records to table ${tableName}: Error: ${err}`));
+            } else {             
+                if(data.UnprocessedItems[tableName])
+                {
+                    paras.RequestItems = data.UnprocessedItems;
+                    recursiveBatchWrite(paras,tableName,requestType,callback);
+                }
+                else
+                    callback(null,`${writeType} Records successfully in table ${tableName}`);
+            }
+        });    
+    }, 250*count);
 }
 
 function recursiveWrite(items,tableName,requestType,callback,region = "us-east-1")
