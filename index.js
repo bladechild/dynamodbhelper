@@ -119,7 +119,7 @@ function recursiveWrite(items,tableName,requestType,callback,region = "us-east-1
             write(subItems,tableName,requestType,region)
                 .then(success=>{
                     //console.log(success);
-                    recursiveWrite(items.slice(25),tableName,requestType,callback);
+                    recursiveWrite(items.slice(25),tableName,requestType,callback, region);
                 })
                 .catch(error=>{
                     //console.log(error);
