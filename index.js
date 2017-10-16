@@ -201,7 +201,7 @@ function GetItemById(item, tableName,region = "us-east-1")
 }
 
 //read all items, conditions is optional and must be well formated
-function GetAllItems(tableName,condition=null,region = "us-east-1")
+function GetAllItems(tableName,condition=null,region = "us-east-1",size=null)
 {
     let items = [];
     return new Promise((resolve,reject)=>{
@@ -210,7 +210,7 @@ function GetAllItems(tableName,condition=null,region = "us-east-1")
                 reject(`Fail fetching data from ${tableName}.`);
             else
                 resolve(items);
-        },region);
+        },size,region);
     });
 
 }
