@@ -2,7 +2,7 @@
 var AWS = require('aws-sdk');
 
 let count = 0;
-function RecursiveGet(tableName,items,start,condition,callback,region = "us-east-1")
+function RecursiveGet(tableName,items,start,condition,callback,size=null,region = "us-east-1")
 {
     //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
     let paras = {
@@ -31,11 +31,31 @@ function RecursiveGet(tableName,items,start,condition,callback,region = "us-east
                 callback("Error");
             } else {
                 //console.log(data);
-                items.push(...data.Items);
-                if(data.LastEvaluatedKey)
-                    RecursiveGet(tableName,items,data.LastEvaluatedKey,condition,callback,region);
+                if(size)
+                {
+                    if(items.length+data.Count<=size)
+                    {
+                        items.push(...data.Items);
+                        if(data.LastEvaluatedKey)
+                            RecursiveGet(tableName,items,data.LastEvaluatedKey,condition,callback,size,region);
+                        else
+                            callback("Done");
+                    }
+                    else
+                    {
+                        let rest = size - items.length;
+                        items.push(...data.Items.slice(0,rest));
+                        callback("Done");
+                    }
+                }
                 else
-                    callback("Done");
+                {
+                    items.push(...data.Items);
+                    if(data.LastEvaluatedKey)
+                        RecursiveGet(tableName,items,data.LastEvaluatedKey,condition,callback,null,region);
+                    else
+                        callback("Done");
+                }
             }
         });
     }, 250*count);
