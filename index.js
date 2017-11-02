@@ -117,7 +117,7 @@ function GetItems(tableName, items, start, condition, size = null, index, region
                     items.push(...data.Items);
                     if (data.LastEvaluatedKey) {
                         console.log("Next 100 ", items.length, size);
-                        GetItems(tableName, items, data.LastEvaluatedKey, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
+                        GetItems(tableName, items, data.LastEvaluatedKey, condition, size, index, region).then(defer.resolve).catch(defer.reject);
                     }
                     else {
                         console.log("done");
