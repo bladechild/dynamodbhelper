@@ -2,6 +2,154 @@
 var AWS = require('aws-sdk');
 
 let count = 0;
+
+
+function Query(tableName, items, start, condition, size = null, index, key, region = "us-east-1") {
+    var defer = Promise.defer();
+    //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
+    let paras = {
+        TableName: tableName,
+        Limit: 100
+    };
+    console.log(condition);
+    if (condition) {
+        let { conditions, operator, parameters, parameterNames } = condition;
+        let filter = conditions.join(` ${operator} `);
+        paras.FilterExpression = filter;
+        paras.ExpressionAttributeValues = parameters;
+        paras.ExpressionAttributeNames = parameterNames;
+    }
+    if (key) {
+        paras.KeyConditions = {};
+        Object.keys(key).forEach(keyCondition => {
+            paras.KeyConditions[keyCondition] = {
+                "ComparisonOperator": key[keyCondition][0],
+                "AttributeValueList": key[keyCondition][1]
+            }
+        });
+        console.log(paras.KeyConditions);
+    }
+    if (start)
+        paras.ExclusiveStartKey = start;
+
+    if (index) {
+        paras.IndexName = index;
+        paras.ScanIndexForward = false
+    }
+    // console.log(paras);
+    const docClient = new AWS.DynamoDB.DocumentClient({ region });
+    docClient.query(paras, (err, data) => {
+        if (err) {
+            console.log(`Fail fetching data from ${tableName}`, err);
+            defer.reject(err);
+        } else {
+            //console.log(data);
+            if (size) {
+                if (items.length + data.Count < size) {
+                    items.push(...data.Items);
+                    if (data.LastEvaluatedKey) {
+                        console.log("Next 100 ", items.length, size);
+                        Query(tableName, items, data.LastEvaluatedKey, start, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
+                    }
+                    else {
+                        console.log("done");
+                        defer.resolve({
+                            items,
+                            lastEvaluatedKey: data.LastEvaluatedKey
+                        });
+                    }
+                }
+                else {
+                    console.log("Last");
+                    let rest = size - items.length;
+                    items.push(...data.Items.slice(0, rest));
+                    defer.resolve({
+                        items,
+                        lastEvaluatedKey: data.LastEvaluatedKey
+                    });
+                }
+            }
+            else {
+                console.log("No Size");
+                items.push(...data.Items);
+                defer.resolve({
+                    items,
+                    lastEvaluatedKey: data.LastEvaluatedKey
+                });
+            }
+        }
+    });
+    return defer.promise;
+}
+
+function GetItems(tableName, items, start, condition, size = null, index, region = "us-east-1") {
+    var defer = Promise.defer();
+    //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
+    let paras = {
+        TableName: tableName,
+        Limit: 100
+    };
+    if (condition) {
+        let { conditions, operator, parameters, parameterNames } = condition;
+        let filter = conditions.join(` ${operator} `);
+        paras.FilterExpression = filter;
+        paras.ExpressionAttributeValues = parameters;
+        paras.ExpressionAttributeNames = parameterNames;
+    }
+
+    if (start)
+        paras.ExclusiveStartKey = start;
+
+    if (index) {
+        paras.IndexName = index;
+        paras.ScanIndexForward = false
+    }
+    // console.log(paras);
+    const docClient = new AWS.DynamoDB.DocumentClient({ region });
+    docClient.scan(paras, (err, data) => {
+        if (err) {
+            console.log(`Fail fetching data from ${tableName}`, err);
+            defer.reject(err);
+        } else {
+            //console.log(data);
+            if (size) {
+                if (items.length + data.Count < size) {
+                    items.push(...data.Items);
+                    if (data.LastEvaluatedKey) {
+                        console.log("Next 100 ", items.length, size);
+                        GetItems(tableName, items, data.LastEvaluatedKey, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
+                    }
+                    else {
+                        console.log("done");
+                        defer.resolve({
+                            items,
+                            lastEvaluatedKey: data.LastEvaluatedKey
+                        });
+                    }
+                }
+                else {
+                    console.log("Last");
+                    let rest = size - items.length;
+                    items.push(...data.Items.slice(0, rest));
+                    defer.resolve({
+                        items,
+                        lastEvaluatedKey: data.LastEvaluatedKey
+                    });
+                }
+            }
+            else {
+                console.log("No Size");
+                items.push(...data.Items);
+                defer.resolve({
+                    items,
+                    lastEvaluatedKey: data.LastEvaluatedKey
+                });
+            }
+        }
+    });
+    return defer.promise;
+}
+
 function RecursiveGet(tableName, items, start, condition, callback, size = null, region = "us-east-1") {
     //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
     let paras = {
@@ -20,39 +168,39 @@ function RecursiveGet(tableName, items, start, condition, callback, size = null,
 
     //console.log(paras);
     count += 1;
-    setTimeout(function () {
-        const docClient = new AWS.DynamoDB.DocumentClient({ region });
-        docClient.scan(paras, (err, data) => {
-            count -= 1;
-            if (err) {
-                console.log(`Fail fetching data from ${tableName}`, err);
-                callback("Error");
-            } else {
-                //console.log(data);
-                if (size) {
-                    if (items.length + data.Count <= size) {
-                        items.push(...data.Items);
-                        if (data.LastEvaluatedKey)
-                            RecursiveGet(tableName, items, data.LastEvaluatedKey, condition, callback, size, region);
-                        else
-                            callback("Done");
-                    }
-                    else {
-                        let rest = size - items.length;
-                        items.push(...data.Items.slice(0, rest));
-                        callback("Done");
-                    }
-                }
-                else {
+    // setTimeout(function () {
+    const docClient = new AWS.DynamoDB.DocumentClient({ region });
+    docClient.scan(paras, (err, data) => {
+        count -= 1;
+        if (err) {
+            console.log(`Fail fetching data from ${tableName}`, err);
+            callback("Error");
+        } else {
+            //console.log(data);
+            if (size) {
+                if (items.length + data.Count <= size) {
                     items.push(...data.Items);
                     if (data.LastEvaluatedKey)
-                        RecursiveGet(tableName, items, data.LastEvaluatedKey, condition, callback, null, region);
+                        RecursiveGet(tableName, items, data.LastEvaluatedKey, condition, callback, size, region);
                     else
                         callback("Done");
                 }
+                else {
+                    let rest = size - items.length;
+                    items.push(...data.Items.slice(0, rest));
+                    callback("Done");
+                }
             }
-        });
-    }, 250 * count);
+            else {
+                items.push(...data.Items);
+                if (data.LastEvaluatedKey)
+                    RecursiveGet(tableName, items, data.LastEvaluatedKey, condition, callback, null, region);
+                else
+                    callback("Done");
+            }
+        }
+    });
+    // }, 250 * count);
 
 
 }
@@ -226,5 +374,7 @@ module.exports = {
     DeleteItems,
     GetItemById,
     GetAllItems,
-    UpdateItem
+    UpdateItem,
+    GetItems,
+    Query
 };
