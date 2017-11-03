@@ -49,7 +49,7 @@ function Query(tableName, items, start, condition, size = null, index, key, regi
                     items.push(...data.Items);
                     if (data.LastEvaluatedKey) {
                         console.log("Next 100 ", items.length, size);
-                        Query(tableName, items, data.LastEvaluatedKey, start, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
+                        Query(tableName, items, data.LastEvaluatedKey, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
                     }
                     else {
                         console.log("done");
