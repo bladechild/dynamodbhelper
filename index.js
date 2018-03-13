@@ -9,7 +9,7 @@ function Query(tableName, items, start, condition, size = null, index, key, regi
     //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
     let paras = {
         TableName: tableName,
-        Limit: 100
+        Limit: 50
     };
     console.log(condition);
     if (condition) {
@@ -49,7 +49,7 @@ function Query(tableName, items, start, condition, size = null, index, key, regi
                     items.push(...data.Items);
                     if (data.LastEvaluatedKey) {
                         console.log("Next 100 ", items.length, size);
-                        Query(tableName, items, data.LastEvaluatedKey, start, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
+                        Query(tableName, items, data.LastEvaluatedKey, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
                     }
                     else {
                         console.log("done");
@@ -87,7 +87,7 @@ function GetItems(tableName, items, start, condition, size = null, index, region
     //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
     let paras = {
         TableName: tableName,
-        Limit: 100
+        Limit: 50
     };
     if (condition) {
         let { conditions, operator, parameters, parameterNames } = condition;
@@ -117,7 +117,7 @@ function GetItems(tableName, items, start, condition, size = null, index, region
                     items.push(...data.Items);
                     if (data.LastEvaluatedKey) {
                         console.log("Next 100 ", items.length, size);
-                        GetItems(tableName, items, data.LastEvaluatedKey, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
+                        GetItems(tableName, items, data.LastEvaluatedKey, condition, size, index, region).then(defer.resolve).catch(defer.reject);
                     }
                     else {
                         console.log("done");
@@ -154,7 +154,7 @@ function RecursiveGet(tableName, items, start, condition, callback, size = null,
     //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
     let paras = {
         TableName: tableName,
-        Limit: 100
+        Limit: 50
     };
     if (condition) {
         let { conditions, operator, parameters, parameterNames } = condition;
