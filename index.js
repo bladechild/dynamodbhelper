@@ -5,7 +5,6 @@ let count = 0;
 
 
 function Query(tableName, items, start, condition, size = null, index, key, region = "us-east-1") {
-    var defer = Promise.defer();
     //condition = {operator:and,conditions:["a>:para1","b<:para2","c!=:para3"],parameters:{":para1":0,":para2":0,":para3":0}}
     let paras = {
         TableName: tableName,
@@ -38,48 +37,49 @@ function Query(tableName, items, start, condition, size = null, index, key, regi
     }
     // console.log(paras);
     const docClient = new AWS.DynamoDB.DocumentClient({ region });
-    docClient.query(paras, (err, data) => {
-        if (err) {
-            console.log(`Fail fetching data from ${tableName}`, err);
-            defer.reject(err);
-        } else {
-            //console.log(data);
-            if (size) {
-                if (items.length + data.Count < size) {
-                    items.push(...data.Items);
-                    if (data.LastEvaluatedKey) {
-                        console.log("Next 100 ", items.length, size);
-                        Query(tableName, items, data.LastEvaluatedKey, condition, size, index, key, region).then(defer.resolve).catch(defer.reject);
+    return new Promise((resolve, reject) => {
+        docClient.query(paras, (err, data) => {
+            if (err) {
+                console.log(`Fail fetching data from ${tableName}`, err);
+                reject(err);
+            } else {
+                //console.log(data);
+                if (size) {
+                    if (items.length + data.Count < size) {
+                        items.push(...data.Items);
+                        if (data.LastEvaluatedKey) {
+                            console.log("Next 100 ", items.length, size);
+                            Query(tableName, items, data.LastEvaluatedKey, condition, size, index, key, region).then(resolve).catch(reject);
+                        }
+                        else {
+                            console.log("done");
+                            resolve({
+                                items,
+                                lastEvaluatedKey: data.LastEvaluatedKey
+                            });
+                        }
                     }
                     else {
-                        console.log("done");
-                        defer.resolve({
+                        console.log("Last");
+                        let rest = size - items.length;
+                        items.push(...data.Items.slice(0, rest));
+                        resolve({
                             items,
                             lastEvaluatedKey: data.LastEvaluatedKey
                         });
                     }
                 }
                 else {
-                    console.log("Last");
-                    let rest = size - items.length;
-                    items.push(...data.Items.slice(0, rest));
-                    defer.resolve({
+                    console.log("No Size");
+                    items.push(...data.Items);
+                    resolve({
                         items,
                         lastEvaluatedKey: data.LastEvaluatedKey
                     });
                 }
             }
-            else {
-                console.log("No Size");
-                items.push(...data.Items);
-                defer.resolve({
-                    items,
-                    lastEvaluatedKey: data.LastEvaluatedKey
-                });
-            }
-        }
+        });
     });
-    return defer.promise;
 }
 
 function GetItems(tableName, items, start, condition, size = null, index, region = "us-east-1") {
